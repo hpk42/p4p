@@ -37,6 +37,7 @@ if __name__ == "__main__":
       install_requires=install_requires,
       entry_points = {
         'console_scripts':
-                    ["friend_lookup_server = friend_lookup_server:main"],
+                    ["friend_lookup_server = friend_lookup_server:main",
+                     "friend_client = friend_client:main"],
       })
 

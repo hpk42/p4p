@@ -5,8 +5,8 @@ The following requests are handled:
 
     POST /PUBKEYID (content-type=application-json)
         {"pubkey": FULL_PUBLIC_KEY,  # must match pubkeyid,
-         "data": json_blob,
-         "data_sig": signature for data blob,
+         "message": json_blob,
+         "signature": signature for data blob,
         }
 
     GET /PUBKEYID (reply will have content-type=application-json)
@@ -15,12 +15,12 @@ The following requests are handled:
 A client will typically do the following to POST new information:
 
     data = # some data structure
-    data_blob = json.dumps(data)
-    data_sig = sign_data(data_blob, key)
+    message = json.dumps(data)
+    signature = sign_data(message, key)
     POST(URL + pubkeyid, data=json.dumps(
-        {"pubkey": full_pubkey,
-         "data_blob": data_blob,
-         "data_sig": data_sig
+        {"key": full_pubkey,
+         "message": message,
+         "signature": signature
         }
     )
 
@@ -28,15 +28,16 @@ and it will do the following to GET and verify information:
 
     r = GET(URL + pubkeyid)
     json = r.json()
-    data_blob = json["data_blob"]
+    message = json["message"]
     pubkey = json["pubkey"]
     verify_pubkeyid_belongs_to_pubkey(pubkeyid, pubkey)
-    verify_data_sig(data_blob, data_sig, pubkey)
+    verify_signature(message, signature, pubkey)
     data = # the data structure posted above.
 
 """
 import sys
 import argparse
+import logging
 from simplejson import loads, dumps
 from webob import Request, Response, exc
 
@@ -48,7 +49,7 @@ def main(args=None):
         '-p', '--port', default='8080', type=int,
         help='Port to serve on (default 8080)')
     parser.add_argument(
-        '-H', '--host', default='127.0.0.1', type=str,
+        '-H', '--host', default='0.0.0.0', type=str,
         help='Host to serve on (default localhost; 0.0.0.0 to make public)')
     if args is None:
         args = sys.argv[1:]
@@ -97,15 +98,15 @@ class JsonRpcApp(object):
             body=dumps(dict(result=data, error=None)))
         return resp
 
-    _JSON_KEYS = set(("pubkey", "data_blob", "data_sig"))
+    _JSON_KEYS = set(("key", "message", "signature"))
 
     def verify_signed_json_presence(self, pubkeyid, json):
         if not set(json.keys()) == self._JSON_KEYS:
             raise exc.HTTPBadRequest(
                 "json must have these keys: %s" %(self._JSON_KEYS))
-        pubkey = json["pubkey"]
-        data_blob = json["data_blob"]
-        data_sig = json["data_sig"]
-        #verify_data_integrity(pubkeyid, pubkey, data, data_sig)
-        #verify that pubkeyid fits to pubkey and that data_sig is a valid
+        pubkey = json["key"]
+        message = json["message"]
+        signature = json["signature"]
+        #verify_data_integrity(pubkeyid, pubkey, data, signature)
+        #verify that pubkeyid fits to pubkey and that signature is a valid
         #signature for data

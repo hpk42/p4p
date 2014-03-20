@@ -13,7 +13,7 @@ def test_post_invalid():
 def test_post_and_get():
     app = make_app()
     req = Request.blank('http://localhost/12345678', method="POST")
-    data = dict(pubkey="123", data_blob="456", data_sig="102938")
+    data = dict(key="123", message="456", signature="102938")
     req.body = dumps(data)
     r = req.get_response(app)
     assert r.status_code == 200
