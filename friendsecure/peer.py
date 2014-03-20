@@ -179,7 +179,7 @@ class Screen(CursesStdIO):
         elif c == curses.KEY_ENTER or c == 10:
             self.addLine('[YOU] ' + self.searchText)
             if self.searchText.startswith('co'):
-                args = self.searchText.split(' ')
+                args = self.searchText.strip().split()
                 if len(args) == 2:
                     def fingerprint_callback(result):
                         details = result['result']['message']
