@@ -44,7 +44,6 @@ def get_user_info(config, fingerprint):
     """
     d = defer.Deferred()
     def body_callback(body):
-        print body
         d.callback(json.loads(body))
 
     def request_callback(response):
@@ -174,9 +173,9 @@ class Screen(CursesStdIO):
         elif c == curses.KEY_ENTER or c == 10:
             self.addLine('[YOU] ' + self.searchText)
             if self.searchText.startswith('co'):
-                self.connect_to_peer(self.searchText)
+                connect_to_peer(self, self.searchText)
             else:
-                self.send_message(self.searchText)
+                send_message(self, self.searchText)
             self.stdscr.refresh()
             self.searchText = ''
         else:
@@ -203,7 +202,7 @@ def connect_to_peer(screen, raw):
     args = raw.strip().split(' ')
     if len(args) == 2:
         def fingerprint_callback(result):
-            details = result['result']['message']
+            details = json.loads(result['result']['message'])
             screen.peer_host = details['ip_address']
             screen.peer_port = details['port']
             screen.addLine('Connecting to %s %d' % (screen.peer_host,
