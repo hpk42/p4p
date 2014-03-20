@@ -1,6 +1,7 @@
 from Crypto import Random
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
+from os.path import exists
 
 
 rng = Random.new().read
@@ -27,3 +28,12 @@ def verify_message(message, public_key, signature):
     else:
         digest = SHA256.new(message).digest()
         return bool(key.verify(digest, signature))
+
+
+def get_my_key(filename='key.pem', size=2048):
+    if exists(filename):
+        key = RSA.importKey(open(filename, 'rb').read())
+    else:
+        key = RSA.generate(size, rng)
+        open(filename, 'wb').write(key.exportKey('PEM'))
+    return key
