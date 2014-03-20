@@ -36,8 +36,9 @@ if __name__ == "__main__":
                 "2.7 3.3".split()],
       install_requires=install_requires,
       entry_points = {
-        'console_scripts':
-                    ["friend_lookup_server = friendsecure.lookup_server:main",
-                    ]
+        'console_scripts': [
+            "friend_lookup_server = friendsecure.lookup_server:main",
+            "friend_client = friendsecure.peer:main",
+        ]
       })
 

@@ -221,7 +221,7 @@ class Screen(CursesStdIO):
 
 
 def parse_arguments():
-    parser = ArgumentParser(description='Friendsecure chat.')
+    parser = ArgumentParser(description='Friendsecure chat client.')
     parser.add_argument('--lookup-url', default='http://teta.local:8080',
         help='url of lookup service')
     parser.add_argument('-p', '--port', default=8888, type=int,
@@ -229,8 +229,9 @@ def parse_arguments():
     return parser.parse_args()
 
 
-if __name__ == '__main__':
+def main():
     args = parse_arguments()
+    global FRIEND_SERVER        # TODO: use some sort of global registry
     FRIEND_SERVER = args.lookup_url.rstrip('/') + '/'
     fingerprint = getpass.getuser() # TODO: Will do for now.
     result = post_user_info(fingerprint, args.port)
