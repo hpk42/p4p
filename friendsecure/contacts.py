@@ -9,6 +9,6 @@ class Contacts:
     def get_fingerprint(self, nick_or_fingerprint):
         for fingerprint, val in self._contacts.items():
             if fingerprint == nick_or_fingerprint:
-                return fingerprint
+                return bytes(fingerprint)
             elif val["nick"] == nick_or_fingerprint:
-                return fingerprint
+                return bytes(fingerprint)
