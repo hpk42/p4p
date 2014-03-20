@@ -19,7 +19,7 @@ from twisted.python import log
 
 from node import Node
 from protocol import MessageFactory
-from friendsecure import crypto
+from friendsecure import crypto, contacts
 
 
 # object with property access for global configuration
@@ -191,7 +191,7 @@ class Screen(CursesStdIO):
                                                 self.peer_port,
                                                 {'type': 'connect',})
 
-                    peer_fingerprint = args[1]
+                    peer_fingerprint = self.config.contacts.get_fingerprint(args[1])
                     d = get_user_info(self.config, peer_fingerprint)
                     d.addCallback(fingerprint_callback)
                 else:
@@ -242,6 +242,7 @@ def parse_arguments():
 def main():
     config = Config(**vars(parse_arguments()))
     config.key = crypto.get_my_key()
+    config.contacts = contacts.Contacts("contacts.json")
     result = post_user_info(config)
     if result.status_code >= 400:
         sys.exit("Couldn't POST to friend server")
