@@ -1,5 +1,5 @@
 from Crypto.PublicKey import RSA
-import crypto
+from friendsecure import crypto
 
 
 key = RSA.importKey("""-----BEGIN RSA PRIVATE KEY-----

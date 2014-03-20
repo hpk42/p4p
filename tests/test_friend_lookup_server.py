@@ -1,6 +1,6 @@
 
 from webob import Request
-from friend_lookup_server import make_app
+from friendsecure.lookup_server import make_app
 from simplejson import dumps, loads
 
 def test_post_invalid():
