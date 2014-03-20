@@ -7,7 +7,7 @@ if __name__ == "__main__":
     here = os.path.abspath(".")
     README = open(os.path.join(here, 'README.rst')).read()
 
-    install_requires = ["webob"],
+    install_requires = ["webob", "simplejson", "pycrypto"]
     if sys.version_info < (2,7):
         install_requires.append("argparse>=1.2.1")
 
