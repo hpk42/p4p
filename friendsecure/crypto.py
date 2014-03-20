@@ -7,10 +7,16 @@ from os.path import exists
 rng = Random.new().read
 
 
-def fingerprint(key):
-    """ Return cryptographic fingerprint (hash) for the given key. """
-    public_key = key.publickey().exportKey('DER')
-    return SHA256.new(public_key).hexdigest()
+class Key(object):
+
+    def __init__(self, key):
+        self.key = key
+
+    @property
+    def fingerprint(self):
+        """ Return cryptographic fingerprint (hash) for the given key. """
+        public_key = self.key.publickey().exportKey('DER')
+        return SHA256.new(public_key).hexdigest()
 
 
 def sign_message(message, key):
@@ -36,4 +42,4 @@ def get_my_key(filename='key.pem', size=2048):
     else:
         key = RSA.generate(size, rng)
         open(filename, 'wb').write(key.exportKey('PEM'))
-    return key
+    return Key(key)

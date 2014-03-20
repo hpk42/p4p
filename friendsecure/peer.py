@@ -24,17 +24,16 @@ from friendsecure import crypto
 
 # object with property access for global configuration
 class Config(object):
-    pass
+
+    def __init__(self, **kw):
+        vars(self).update(kw)
 
 
-config = Config()
-
-
-def lookup_url(fingerprint):
+def lookup_url(config, fingerprint):
     return '%s/%s' % (config.lookup_url.rstrip('/'), fingerprint)
 
 
-def get_user_info(fingerprint):
+def get_user_info(config, fingerprint):
     """
     fingerprint = the user's fingerprint
 
@@ -55,7 +54,7 @@ def get_user_info(fingerprint):
     agent = Agent(reactor)
     request = agent.request(
         'GET',
-        lookup_url(fingerprint),
+        lookup_url(config, fingerprint),
         Headers({}),
         None
     )
@@ -63,7 +62,7 @@ def get_user_info(fingerprint):
     return d
 
 
-def post_user_info(fingerprint, port):
+def post_user_info(config):
     """
     Must be called before reactor starts.
 
@@ -76,14 +75,15 @@ def post_user_info(fingerprint, port):
     me = {
         'hostname': hostname,
         'ip_address': address,
-        'port': port
+        'port': config.port
     }
+    fingerprint = config.key.fingerprint
     data = {
         "key": fingerprint,
         "message":  me,
         "signature": 'blob'
     }
-    return requests.post(lookup_url(fingerprint), data=json.dumps(data))
+    return requests.post(lookup_url(config, fingerprint), data=json.dumps(data))
 
 
 class CursesStdIO:
@@ -109,10 +109,11 @@ class CursesStdIO:
 
 
 class Screen(CursesStdIO):
-    def __init__(self, stdscr):
+    def __init__(self, config, stdscr):
         self.timer = 0
         self.statusText = "TEST CURSES APP -"
         self.searchText = ''
+        self.config = config
         self.stdscr = stdscr
 
         # set screen attributes
@@ -191,7 +192,7 @@ class Screen(CursesStdIO):
                                                 {'type': 'connect',})
 
                     peer_fingerprint = args[1]
-                    d = get_user_info(peer_fingerprint)
+                    d = get_user_info(self.config, peer_fingerprint)
                     d.addCallback(fingerprint_callback)
                 else:
                     self.addLine('INCORRECT ARGS: co fingerprint')
@@ -239,18 +240,18 @@ def parse_arguments():
 
 
 def main():
-    vars(config).update(vars(parse_arguments()))
-    fingerprint = crypto.fingerprint(crypto.get_my_key())
-    result = post_user_info(fingerprint, config.port)
+    config = Config(**vars(parse_arguments()))
+    config.key = crypto.get_my_key()
+    result = post_user_info(config)
     if result.status_code >= 400:
         sys.exit("Couldn't POST to friend server")
     stdscr = curses.initscr() # initialize curses
-    screen = Screen(stdscr)   # create Screen object
+    screen = Screen(config, stdscr)   # create Screen object
     stdscr.refresh()
     n = Node('foo', 'bar', screen)
     screen._node = n
     reactor.listenTCP(config.port, MessageFactory(n))
     reactor.addReader(screen) # add screen object as a reader to the reactor
-    screen.addLine('Fingerprint: %s' % fingerprint)
+    screen.addLine('Fingerprint: %s' % config.key.fingerprint)
     reactor.run() # have fun!
     screen.close()

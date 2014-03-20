@@ -20,7 +20,7 @@ iZKNrWEbc3I6xUWqpRul+mBeUjOwkc+9LLnqecgubO/3
 
 
 def test_fingerprint():
-    assert crypto.fingerprint(key) == '657cd81a6b106b4c1f3e82af2ce9c1a50d61d3fea9bb5d44d6c6796362b257aa'
+    assert crypto.Key(key).fingerprint == '657cd81a6b106b4c1f3e82af2ce9c1a50d61d3fea9bb5d44d6c6796362b257aa'
 
 
 def test_sign_message():
