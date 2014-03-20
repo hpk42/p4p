@@ -4,7 +4,7 @@ web storage for posting and getting data for a given pubkeyid.
 The following requests are handled:
 
     POST /PUBKEYID (content-type=application-json)
-        {"pubkey": FULL_PUBLIC_KEY,  # must match pubkeyid,
+        {"key": FULL_PUBLIC_KEY,  # must match pubkeyid,
          "message": json_blob,
          "signature": signature for data blob,
         }
@@ -29,9 +29,9 @@ and it will do the following to GET and verify information:
     r = GET(URL + pubkeyid)
     json = r.json()
     message = json["message"]
-    pubkey = json["pubkey"]
-    verify_pubkeyid_belongs_to_pubkey(pubkeyid, pubkey)
-    verify_signature(message, signature, pubkey)
+    key = json["key"]
+    verify_pubkeyid_belongs_to_pubkey(pubkeyid, key)
+    verify_signature(message, signature, key)
     data = # the data structure posted above.
 
 """
