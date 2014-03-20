@@ -44,7 +44,9 @@ def main(args=None):
     if args is None:
         args = sys.argv[1:]
     args = parser.parse_args()
-    my_hostname = subprocess.check_output("hostname").strip() + ".local"
+    my_hostname = subprocess.check_output("hostname").strip()
+    if not my_hostname.endswith(".local"):
+        my_hostname += ".local"
     my_url = "http://%s:%s"% (my_hostname, args.port)
     lookup = LookupService(args.lookup)
     uithread = InputThread(args.myid, lookup)
