@@ -107,7 +107,7 @@ class JsonRpcApp(object):
         if not set(json.keys()) == self._JSON_KEYS:
             raise exc.HTTPBadRequest(
                 "json must have these keys: %s" %(self._JSON_KEYS))
-        if not crypto.verify_message(**json):
+        if not crypto.verify_message(fingerprint=pubkeyid, **json):
             raise exc.HTTPBadRequest("bad message integrity")
         #verify that pubkeyid fits to pubkey and that signature is a valid
         #signature for data

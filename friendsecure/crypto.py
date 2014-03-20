@@ -33,12 +33,14 @@ class Key(object):
             signature=self.sign(message))
 
 
-def verify_message(message, key, signature):
+def verify_message(message, key, signature, fingerprint=None):
     try:
         key = RSA.importKey(key.strip().decode('base64'))
     except Exception:
         return False
     else:
+        if fingerprint is not None and fingerprint != Key(key).fingerprint:
+            return False
         digest = SHA256.new(message).digest()
         return bool(key.verify(digest, signature))
 
