@@ -11,6 +11,7 @@ import json
 import curses
 import curses.wrapper
 
+from argparse import ArgumentParser
 from twisted.internet import reactor, defer
 from twisted.web.client import Agent, readBody
 from twisted.web.http_headers import Headers
@@ -18,12 +19,21 @@ from twisted.python import log
 
 from node import Node
 from protocol import MessageFactory
+from friendsecure import crypto
 
 
-FRIEND_SERVER = 'http://10.0.0.2:8080/'
+# object with property access for global configuration
+class Config(object):
+
+    def __init__(self, **kw):
+        vars(self).update(kw)
 
 
-def get_user_info(fingerprint):
+def lookup_url(config, fingerprint):
+    return '%s/%s' % (config.lookup_url.rstrip('/'), fingerprint)
+
+
+def get_user_info(config, fingerprint):
     """
     fingerprint = the user's fingerprint
 
@@ -44,7 +54,7 @@ def get_user_info(fingerprint):
     agent = Agent(reactor)
     request = agent.request(
         'GET',
-        FRIEND_SERVER + fingerprint,
+        lookup_url(config, fingerprint),
         Headers({}),
         None
     )
@@ -52,7 +62,7 @@ def get_user_info(fingerprint):
     return d
 
 
-def post_user_info(fingerprint, port):
+def post_user_info(config):
     """
     Must be called before reactor starts.
 
@@ -65,15 +75,15 @@ def post_user_info(fingerprint, port):
     me = {
         'hostname': hostname,
         'ip_address': address,
-        'port': port
+        'port': config.port
     }
+    fingerprint = config.key.fingerprint
     data = {
         "key": fingerprint,
         "message":  me,
         "signature": 'blob'
     }
-    url = FRIEND_SERVER + fingerprint
-    return requests.post(url, data=json.dumps(data))
+    return requests.post(lookup_url(config, fingerprint), data=json.dumps(data))
 
 
 class CursesStdIO:
@@ -99,10 +109,11 @@ class CursesStdIO:
 
 
 class Screen(CursesStdIO):
-    def __init__(self, stdscr):
+    def __init__(self, config, stdscr):
         self.timer = 0
         self.statusText = "TEST CURSES APP -"
         self.searchText = ''
+        self.config = config
         self.stdscr = stdscr
 
         # set screen attributes
@@ -181,7 +192,7 @@ class Screen(CursesStdIO):
                                                 {'type': 'connect',})
 
                     peer_fingerprint = args[1]
-                    d = get_user_info(peer_fingerprint)
+                    d = get_user_info(self.config, peer_fingerprint)
                     d.addCallback(fingerprint_callback)
                 else:
                     self.addLine('INCORRECT ARGS: co fingerprint')
@@ -218,21 +229,29 @@ class Screen(CursesStdIO):
         curses.echo()
         curses.endwin()
 
-if __name__ == '__main__':
-    port = 8888
-    if len(sys.argv) == 2:
-        port = int(sys.argv[1])
-    fingerprint = getpass.getuser() # TODO: Will do for now.
-    result = post_user_info(fingerprint, port)
+
+def parse_arguments():
+    parser = ArgumentParser(description='Friendsecure chat client.')
+    parser.add_argument('--lookup-url', default='http://teta.local:8080',
+        help='url of lookup service')
+    parser.add_argument('-p', '--port', default=8888, type=int,
+        help='port to listen on for incoming messages')
+    return parser.parse_args()
+
+
+def main():
+    config = Config(**vars(parse_arguments()))
+    config.key = crypto.get_my_key()
+    result = post_user_info(config)
     if result.status_code >= 400:
         sys.exit("Couldn't POST to friend server")
     stdscr = curses.initscr() # initialize curses
-    screen = Screen(stdscr)   # create Screen object
+    screen = Screen(config, stdscr)   # create Screen object
     stdscr.refresh()
     n = Node('foo', 'bar', screen)
     screen._node = n
-    reactor.listenTCP(port, MessageFactory(n))
+    reactor.listenTCP(config.port, MessageFactory(n))
     reactor.addReader(screen) # add screen object as a reader to the reactor
-    screen.addLine('Fingerprint: %s' % fingerprint)
+    screen.addLine('Fingerprint: %s' % config.key.fingerprint)
     reactor.run() # have fun!
     screen.close()

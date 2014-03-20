@@ -1,15 +1,22 @@
 from Crypto import Random
 from Crypto.Hash import SHA256
 from Crypto.PublicKey import RSA
+from os.path import exists
 
 
 rng = Random.new().read
 
 
-def fingerprint(key):
-    """ Return cryptographic fingerprint (hash) for the given key. """
-    public_key = key.publickey().exportKey('DER')
-    return SHA256.new(public_key).hexdigest()
+class Key(object):
+
+    def __init__(self, key):
+        self.key = key
+
+    @property
+    def fingerprint(self):
+        """ Return cryptographic fingerprint (hash) for the given key. """
+        public_key = self.key.publickey().exportKey('DER')
+        return SHA256.new(public_key).hexdigest()
 
 
 def sign_message(message, key):
@@ -27,3 +34,12 @@ def verify_message(message, public_key, signature):
     else:
         digest = SHA256.new(message).digest()
         return bool(key.verify(digest, signature))
+
+
+def get_my_key(filename='key.pem', size=2048):
+    if exists(filename):
+        key = RSA.importKey(open(filename, 'rb').read())
+    else:
+        key = RSA.generate(size, rng)
+        open(filename, 'wb').write(key.exportKey('PEM'))
+    return Key(key)

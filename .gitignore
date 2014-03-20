@@ -37,3 +37,4 @@ nosetests.xml
 
 # VIM
 *.swp
+/key.pem
