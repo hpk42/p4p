@@ -205,7 +205,7 @@ class Screen(CursesStdIO):
         curses.endwin()
 
 def connect_to_peer(screen, raw):
-    args = raw.split(' ')
+    args = raw.strip().split(' ')
     if len(args) == 2:
         def fingerprint_callback(result):
             details = result['result']['message']
