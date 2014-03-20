@@ -2,7 +2,6 @@
 import sys
 import argparse
 import subprocess
-import gevent
 import requests
 import threading
 import webob
