@@ -17,7 +17,7 @@ from twisted.web.http_headers import Headers
 from twisted.python import log
 
 from node import Node
-from protocol import MeshageFactory
+from protocol import MessageFactory
 
 
 FRIEND_SERVER = 'http://10.0.0.2:8080/'
@@ -231,7 +231,7 @@ if __name__ == '__main__':
     stdscr.refresh()
     n = Node('foo', 'bar', screen)
     screen._node = n
-    reactor.listenTCP(port, MeshageFactory(n))
+    reactor.listenTCP(port, MessageFactory(n))
     reactor.addReader(screen) # add screen object as a reader to the reactor
     screen.addLine('Fingerprint: %s' % fingerprint)
     reactor.run() # have fun!

@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Contains a definition of the low-level networking protocol used by Meshage.
+Contains a definition of the low-level networking protocol used for messaging.
 
 """
 
@@ -10,7 +10,7 @@ from uuid import uuid4
 import json
 
 
-class MeshageProtocol(NetstringReceiver):
+class MessageProtocol(NetstringReceiver):
     """
     The low level networking protocol.
 
@@ -41,10 +41,9 @@ class MeshageProtocol(NetstringReceiver):
         """
         try:
             message = json.loads(raw)
-            print '%r' % message
+            # TODO: Add incoming message validation
             self.factory.node.message_received(message, self)
-        except Exception, ex:
-            # Catch all for anything unexpected
+        except ValueError, ex:
             description = '%r' % ex
             self.error(description)
 
@@ -56,12 +55,12 @@ class MeshageProtocol(NetstringReceiver):
         self.sendString(json.dumps(msg))
 
 
-class MeshageFactory(protocol.Factory):
+class MessageFactory(protocol.Factory):
     """
-    Meshage Factory class that uses the MeshageProtocol.
+    Message Factory class that uses the MessageProtocol.
     """
 
-    protocol = MeshageProtocol
+    protocol = MessageProtocol
 
     def __init__(self, node):
         """

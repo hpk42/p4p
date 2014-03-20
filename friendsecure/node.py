@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Contains code that defines the behaviour of the local Meshage node.
+Contains code that defines the behaviour of the local node.
 """
 
 from twisted.internet import reactor, defer
@@ -8,12 +8,12 @@ from twisted.internet.endpoints import clientFromString
 from uuid import uuid4
 import time
 
-from protocol import MeshageFactory
+from protocol import MessageFactory
 
 
 class Node(object):
     """
-    Represents the local node in the Meshage network.
+    Represents the local node in the network.
     """
 
     def __init__(self, public_key, private_key, screen):
@@ -66,7 +66,7 @@ class Node(object):
         # open network call.
         client_string = 'tcp:%s:%d' % (host, port)
         client = clientFromString(reactor, client_string)
-        connection = client.connect(MeshageFactory(self))
+        connection = client.connect(MessageFactory(self))
         # Ensure the connection attempt will time out after 5 seconds.
         connection_timeout = reactor.callLater(5, connection.cancel)
 
