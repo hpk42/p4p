@@ -40,6 +40,8 @@ import argparse
 import logging
 from simplejson import loads, dumps
 from webob import Request, Response, exc
+from friendsecure import crypto
+
 
 def main(args=None):
     from wsgiref import simple_server
@@ -105,9 +107,7 @@ class JsonRpcApp(object):
         if not set(json.keys()) == self._JSON_KEYS:
             raise exc.HTTPBadRequest(
                 "json must have these keys: %s" %(self._JSON_KEYS))
-        pubkey = json["key"]
-        message = json["message"]
-        signature = json["signature"]
-        #verify_data_integrity(pubkeyid, pubkey, data, signature)
+        if not crypto.verify_message(**json):
+            raise exc.HTTPBadRequest("bad message integrity")
         #verify that pubkeyid fits to pubkey and that signature is a valid
         #signature for data

@@ -72,18 +72,13 @@ def post_user_info(config):
     if not hostname.endswith('.local'):
         hostname += '.local'
     address = socket.gethostbyname(hostname)
-    me = {
-        'hostname': hostname,
+    presence = json.dumps({
+        'hostname': hostname,       # TODO: remove, only for debugging
         'ip_address': address,
         'port': config.port
-    }
-    fingerprint = config.key.fingerprint
-    data = {
-        "key": fingerprint,
-        "message":  me,
-        "signature": 'blob'
-    }
-    return requests.post(lookup_url(config, fingerprint), data=json.dumps(data))
+    })
+    data = json.dumps(config.key.sign_message(presence))
+    return requests.post(lookup_url(config, key.fingerprint), data=data)
 
 
 class CursesStdIO:
