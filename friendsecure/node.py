@@ -39,17 +39,11 @@ class Node(object):
             protocol.error('Must specify message type.')
             return
         message_type = message['type']
-        if message_type == 'ok':
-            pass
-        elif message_type == 'connect':
+        if message_type == 'connect':
             self._screen.addLine('Connection from %s %d' % (peer.host,
                                                             peer.port))
         else:
             self._screen.addLine('[THEM] ' + message['message'] + '\n')
-            protocol.sendMessage({
-                'type': 'ok',
-                'message': message['message']
-            })
 
     def send_message(self, host, port, message):
         """
