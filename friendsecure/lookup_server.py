@@ -87,6 +87,7 @@ class JsonRpcApp(object):
         # XXX verify signature
         json = loads(req.body)
         self.verify_signed_json_presence(pubkeyid, json)
+        logging.warn("registering %s" %(json,))
         self._pubkeyid2data[pubkeyid] = json
         return Response(status=200)
 
