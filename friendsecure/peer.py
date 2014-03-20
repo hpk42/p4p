@@ -22,11 +22,16 @@ from protocol import MessageFactory
 from friendsecure import crypto
 
 
-config = dict()
+# object with property access for global configuration
+class Config(object):
+    pass
+
+
+config = Config()
 
 
 def lookup_url(fingerprint):
-    return '%s/%s' % (config['lookup_url'].rstrip('/'), fingerprint)
+    return '%s/%s' % (config.lookup_url.rstrip('/'), fingerprint)
 
 
 def get_user_info(fingerprint):
@@ -234,10 +239,9 @@ def parse_arguments():
 
 
 def main():
-    args = parse_arguments()
-    config.update(vars(args))
+    vars(config).update(vars(parse_arguments()))
     fingerprint = crypto.fingerprint(crypto.get_my_key())
-    result = post_user_info(fingerprint, args.port)
+    result = post_user_info(fingerprint, config.port)
     if result.status_code >= 400:
         sys.exit("Couldn't POST to friend server")
     stdscr = curses.initscr() # initialize curses
@@ -245,7 +249,7 @@ def main():
     stdscr.refresh()
     n = Node('foo', 'bar', screen)
     screen._node = n
-    reactor.listenTCP(args.port, MessageFactory(n))
+    reactor.listenTCP(config.port, MessageFactory(n))
     reactor.addReader(screen) # add screen object as a reader to the reactor
     screen.addLine('Fingerprint: %s' % fingerprint)
     reactor.run() # have fun!
