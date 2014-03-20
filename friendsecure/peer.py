@@ -78,7 +78,7 @@ def post_user_info(config):
         'port': config.port
     })
     data = json.dumps(config.key.sign_message(presence))
-    return requests.post(lookup_url(config, key.fingerprint), data=data)
+    return requests.post(lookup_url(config, config.key.fingerprint), data=data)
 
 
 class CursesStdIO:
