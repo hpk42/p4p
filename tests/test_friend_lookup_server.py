@@ -1,14 +1,15 @@
 
 from webob import Request
 from friendsecure.lookup_server import make_app
-from simplejson import dumps, loads
+from simplejson import dumps
+
 
 def test_post_invalid():
     app = make_app()
     req = Request.blank('http://localhost/12345678', method="POST")
-    data = {"hello": 42}
     r = req.get_response(app)
     assert r.status_code == 400
+
 
 def test_post_and_get():
     app = make_app()
