@@ -22,7 +22,11 @@ from protocol import MessageFactory
 from friendsecure import crypto
 
 
-FRIEND_SERVER = None
+config = dict()
+
+
+def lookup_url(fingerprint):
+    return '%s/%s' % (config['lookup_url'].rstrip('/'), fingerprint)
 
 
 def get_user_info(fingerprint):
@@ -46,7 +50,7 @@ def get_user_info(fingerprint):
     agent = Agent(reactor)
     request = agent.request(
         'GET',
-        FRIEND_SERVER + fingerprint,
+        lookup_url(fingerprint),
         Headers({}),
         None
     )
@@ -74,8 +78,7 @@ def post_user_info(fingerprint, port):
         "message":  me,
         "signature": 'blob'
     }
-    url = FRIEND_SERVER + fingerprint
-    return requests.post(url, data=json.dumps(data))
+    return requests.post(lookup_url(fingerprint), data=json.dumps(data))
 
 
 class CursesStdIO:
@@ -232,8 +235,7 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
-    global FRIEND_SERVER        # TODO: use some sort of global registry
-    FRIEND_SERVER = args.lookup_url.rstrip('/') + '/'
+    config.update(vars(args))
     fingerprint = crypto.fingerprint(crypto.get_my_key())
     result = post_user_info(fingerprint, args.port)
     if result.status_code >= 400:
