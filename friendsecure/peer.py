@@ -11,6 +11,7 @@ import json
 import curses
 import curses.wrapper
 
+from argparse import ArgumentParser
 from twisted.internet import reactor, defer
 from twisted.web.client import Agent, readBody
 from twisted.web.http_headers import Headers
@@ -20,7 +21,7 @@ from node import Node
 from protocol import MessageFactory
 
 
-FRIEND_SERVER = 'http://10.0.0.2:8080/'
+FRIEND_SERVER = None
 
 
 def get_user_info(fingerprint):
@@ -218,12 +219,21 @@ class Screen(CursesStdIO):
         curses.echo()
         curses.endwin()
 
+
+def parse_arguments():
+    parser = ArgumentParser(description='Friendsecure chat.')
+    parser.add_argument('--lookup-url', default='http://teta.local:8080',
+        help='url of lookup service')
+    parser.add_argument('-p', '--port', default=8888, type=int,
+        help='port to listen on for incoming messages')
+    return parser.parse_args()
+
+
 if __name__ == '__main__':
-    port = 8888
-    if len(sys.argv) == 2:
-        port = int(sys.argv[1])
+    args = parse_arguments()
+    FRIEND_SERVER = args.lookup_url.rstrip('/') + '/'
     fingerprint = getpass.getuser() # TODO: Will do for now.
-    result = post_user_info(fingerprint, port)
+    result = post_user_info(fingerprint, args.port)
     if result.status_code >= 400:
         sys.exit("Couldn't POST to friend server")
     stdscr = curses.initscr() # initialize curses
@@ -231,7 +241,7 @@ if __name__ == '__main__':
     stdscr.refresh()
     n = Node('foo', 'bar', screen)
     screen._node = n
-    reactor.listenTCP(port, MessageFactory(n))
+    reactor.listenTCP(args.port, MessageFactory(n))
     reactor.addReader(screen) # add screen object as a reader to the reactor
     screen.addLine('Fingerprint: %s' % fingerprint)
     reactor.run() # have fun!
