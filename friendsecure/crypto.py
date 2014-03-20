@@ -18,18 +18,25 @@ class Key(object):
         public_key = self.key.publickey().exportKey('DER')
         return SHA256.new(public_key).hexdigest()
 
+    @property
+    def public_key_base64(self):
+        return self.key.publickey().exportKey('DER').encode('base64')
 
-def sign_message(message, key):
-    digest = SHA256.new(message).digest()
-    signature = key.sign(digest, rng)
-    public_key = key.publickey().exportKey('DER')
-    return dict(message=message, public_key=public_key, signature=signature)
+    def sign(self, message):
+        digest = SHA256.new(message).digest()
+        return list(self.key.sign(digest, rng))
+
+    def sign_message(self, message):
+        return dict(
+            key=self.public_key_base64,
+            message=message,
+            signature=self.sign(message))
 
 
-def verify_message(message, public_key, signature):
+def verify_message(message, key, signature):
     try:
-        key = RSA.importKey(public_key)
-    except ValueError:
+        key = RSA.importKey(key.strip().decode('base64'))
+    except Exception:
         return False
     else:
         digest = SHA256.new(message).digest()
