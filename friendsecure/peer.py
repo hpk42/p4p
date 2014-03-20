@@ -179,34 +179,9 @@ class Screen(CursesStdIO):
         elif c == curses.KEY_ENTER or c == 10:
             self.addLine('[YOU] ' + self.searchText)
             if self.searchText.startswith('co'):
-                args = self.searchText.split(' ')
-                if len(args) == 2:
-                    def fingerprint_callback(result):
-                        details = result['result']['message']
-                        self.peer_host = details['ip_address']
-                        self.peer_port = details['port']
-                        self.addLine('Connecting to %s %d' % (self.peer_host,
-                                     self.peer_port))
-                        self._node.send_message(self.peer_host,
-                                                self.peer_port,
-                                                {'type': 'connect',})
-
-                    peer_fingerprint = self.config.contacts.get_fingerprint(args[1])
-                    d = get_user_info(self.config, peer_fingerprint)
-                    d.addCallback(fingerprint_callback)
-                else:
-                    self.addLine('INCORRECT ARGS: co fingerprint')
+                self.connect_to_peer(self.searchText)
             else:
-                try:
-                    if self.peer_host and self.peer_port:
-                        self._node.send_message(self.peer_host,
-                                                self.peer_port,
-                                                {'type': 'message',
-                                                 'message': self.searchText})
-                    else:
-                        self.addLine('PLEASE CONNECT TO A PEER: "co ip port"')
-                except:
-                    pass
+                self.send_message(self.searchText)
             self.stdscr.refresh()
             self.searchText = ''
         else:
@@ -228,6 +203,35 @@ class Screen(CursesStdIO):
         self.stdscr.keypad(0)
         curses.echo()
         curses.endwin()
+
+def connect_to_peer(screen, raw):
+    args = raw.split(' ')
+    if len(args) == 2:
+        def fingerprint_callback(result):
+            details = result['result']['message']
+            screen.peer_host = details['ip_address']
+            screen.peer_port = details['port']
+            screen.addLine('Connecting to %s %d' % (screen.peer_host,
+                           screen.peer_port))
+            screen._node.send_message(screen.peer_host, screen.peer_port,
+                                      {'type': 'connect',})
+
+        peer_fingerprint = screen.config.contacts.get_fingerprint(args[1])
+        d = get_user_info(screen.config, peer_fingerprint)
+        d.addCallback(fingerprint_callback)
+    else:
+        screen.addLine('INCORRECT ARGS: co fingerprint')
+
+def send_message(screen, raw):
+    try:
+        if screen.peer_host and screen.peer_port:
+            screen._node.send_message(screen.peer_host, screen.peer_port,
+                                      {'type': 'message',
+                                       'message': raw})
+        else:
+            screen.addLine('PLEASE CONNECT TO A PEER: "co "')
+    except:
+        pass
 
 
 def parse_arguments():
