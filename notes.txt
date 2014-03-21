@@ -61,3 +61,63 @@ what it will not do
 - no realtime video/voice calls
 - no support for communication where anonymity is important 
 
+
+Technical Stories
+===================
+
+User generates a device-specific ID
+----------------------------------------
+
+- create locally a new public/private key pair
+
+User signals ID presence to a lookup service
+-----------------------------------------------------
+
+- update current IPs in presence entry
+
+User aliases two of their device IDs
+---------------------------------------------------
+
+- one device communicates its public key from its ID 
+  and its presence IP to the other out-of-band (QR/SMS/typing).
+
+- the first device gets public key from second device
+  
+- update alias ids on each device 
+
+- allow friends to access presence of new device
+
+- optionally send out notifications to friends
+
+
+Two Users become friends
+-----------------------------
+
+A user unfriends another
+-----------------------------
+
+User signals their presence to friend(s)
+-----------------------------------------------------
+
+-  
+
+User asks for presence information about a friend
+-----------------------------------------------------
+
+User sends message to a friend
+----------------------------------
+
+
+
+Presence entry for an ID
+=======================================
+
+encrypted with a shared secret:
+
+- IPs
+- alias IDs
+- relay IDs
+
+shared secret is encrypted individually for each friend.
+(you can access/modify shared secret info with lookup service
+in separate messages).
