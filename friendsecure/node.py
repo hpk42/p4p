@@ -5,10 +5,8 @@ Contains code that defines the behaviour of the local node.
 
 from twisted.internet import reactor, defer
 from twisted.internet.endpoints import clientFromString
-from uuid import uuid4
-import time
-
 from protocol import MessageFactory
+from friendsecure.console import display
 
 
 class Node(object):
@@ -16,23 +14,21 @@ class Node(object):
     Represents the local node in the network.
     """
 
-    def __init__(self, public_key, private_key, screen):
+    def __init__(self, public_key, private_key, config):
         """
         Initialises the object representing the node with the given id.
         """
         self._public_key = public_key
         self._private_key = private_key
-        self._screen = screen
         self._contacts = {}
+        self.config = config
 
     def message_received(self, message, protocol):
         """
         Handles incoming messages.
         """
         peer = protocol.transport.getPeer()
-        self._screen.peer_host = peer.host
-        self._screen.peer_port = peer.port
-        peer_key = (peer.host, peer.port)
+        self.config.peer = peer_key = (peer.host, peer.port)
         if peer_key not in self._contacts:
             self._contacts[peer_key] = protocol
         if 'type' not in message:
@@ -40,10 +36,9 @@ class Node(object):
             return
         message_type = message['type']
         if message_type == 'connect':
-            self._screen.addLine('Connection from %s %d' % (peer.host,
-                                                            peer.port))
+            display('Connection from %s %d' % (peer.host, peer.port))
         else:
-            self._screen.addLine('[THEM] ' + message['message'] + '\n')
+            display('[THEM] ' + message['message'])
 
     def send_message(self, host, port, message):
         """
