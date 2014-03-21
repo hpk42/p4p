@@ -1,0 +1,63 @@
+
+shared vision: secure, non-trackable, non-monetizable communications...
+IT developers/admins are empowered to change something about the technical infrastructure.
+
+Idea: write a pledge draft, push to repository, accept PRs and publish and sign V1.
+problem statement: how we see the current situation, problem of people working
+for "tracking" systems, construct code of ethics.  
+
+
+
+P2P messenging: elevator pitch
+==============================================
+
+Target customer
+---------------------
+non-IT experts, but interested in privacy, users of messengers (WhatsApp, Threema, TextSecure, SMS)
+
+statement of need/opportunity
+---------------------
+people who value privacy without having to trust a third party.
+
+product name
+---------------------
+X
+
+what is it doing
+---------------------
+cross-platform messenger application (mobile, web, open protocols)
+
+
+key benefit 
+----------------------------------------------------
+
+- end-to-end encryption
+- multi-platform
+- decentralized (P2P with optional supernodes)
+- meshing
+
+how is it unlike things that exist
+----------------------------------------------------
+
+- no ads
+- no tracking / logging
+- no central point of failure / congestion
+- allow pseudonimity
+- shared/public ownership of infrastructure
+
+
+statement of primary differentiation
+----------------------------------------------------
+
+- reliability through decentralization/meshing
+- free and open source (shared with textsecure)
+- federated open protocols
+- low latency  
+
+
+what it will not do
+-------------------------------------------
+
+- no realtime video/voice calls
+- no support for communication where anonymity is important 
+
