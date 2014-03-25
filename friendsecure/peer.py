@@ -4,36 +4,35 @@
 The UI for a simple chat application.
 """
 import sys
-import getpass
 import socket
 import requests
 import json
-import curses
-import curses.wrapper
 
 from argparse import ArgumentParser
 from twisted.internet import reactor, defer
 from twisted.web.client import Agent, readBody
 from twisted.web.http_headers import Headers
-from twisted.python import log
 
 from node import Node
 from protocol import MessageFactory
-from friendsecure import crypto, contacts
+from friendsecure import crypto, contacts, console
 
 
 # object with property access for global configuration
 class Config(object):
 
-    def __init__(self, **kw):
-        vars(self).update(kw)
+    def update(self, data):
+        vars(self).update(data)
 
 
-def lookup_url(config, fingerprint):
+config = Config()
+
+
+def lookup_url(fingerprint):
     return '%s/%s' % (config.lookup_url.rstrip('/'), fingerprint)
 
 
-def get_user_info(config, fingerprint):
+def get_user_info(fingerprint):
     """
     fingerprint = the user's fingerprint
 
@@ -53,7 +52,7 @@ def get_user_info(config, fingerprint):
     agent = Agent(reactor)
     request = agent.request(
         'GET',
-        lookup_url(config, fingerprint),
+        lookup_url(fingerprint),
         Headers({}),
         None
     )
@@ -61,7 +60,7 @@ def get_user_info(config, fingerprint):
     return d
 
 
-def post_user_info(config):
+def post_user_info():
     """
     Must be called before reactor starts.
 
@@ -77,153 +76,49 @@ def post_user_info(config):
         'port': config.port
     })
     data = json.dumps(config.key.sign_message(presence))
-    return requests.post(lookup_url(config, config.key.fingerprint), data=data)
+    return requests.post(lookup_url(config.key.fingerprint), data=data)
 
 
-class CursesStdIO:
-    """
-    Fake fd to be registered as a reader with the twisted reactor.
-    Curses classes needing input should extend this.
-    """
-
-    def fileno(self):
-        """
-        We want to select on FD 0
-        """
-        return 0
-
-    def doRead(self):
-        """
-        Called when input is ready
-        """
-        pass
-
-    def logPrefix(self):
-        return 'CursesClient'
+def prompt():
+    while True:
+        message = console.get_input()
+        reactor.callFromThread(dispatch, message)
 
 
-class Screen(CursesStdIO):
-    def __init__(self, config, stdscr):
-        self.timer = 0
-        self.statusText = "TEST CURSES APP -"
-        self.searchText = ''
-        self.config = config
-        self.stdscr = stdscr
+def dispatch(message):
+    console.display('[YOU] ' + message)
+    if message.startswith('co '):
+        connect_to_peer(message)
+    else:
+        send_message(message)
 
-        # set screen attributes
-        self.stdscr.nodelay(1) # this is used to make input calls non-blocking
-        curses.cbreak()
-        self.stdscr.keypad(1)
-        curses.curs_set(0)     # no annoying mouse cursor
 
-        self.rows, self.cols = self.stdscr.getmaxyx()
-        self.lines = []
-
-        curses.start_color()
-
-        # create color pair's 1 and 2
-        curses.init_pair(1, curses.COLOR_BLACK, curses.COLOR_WHITE)
-        curses.init_pair(2, curses.COLOR_CYAN, curses.COLOR_BLACK)
-
-        self.paintStatus(self.statusText)
-
-        self.peer_host = ''
-        self.peer_port = 0
-
-    def connectionLost(self, reason):
-        self.close()
-
-    def addLine(self, text):
-        """ add a line to the internal list of lines"""
-
-        self.lines.append(text)
-        self.redisplayLines()
-
-    def redisplayLines(self):
-        """ method for redisplaying lines
-            based on internal list of lines """
-
-        self.stdscr.clear()
-        self.paintStatus(self.statusText)
-        i = 0
-        index = len(self.lines) - 1
-        while i < (self.rows - 3) and index >= 0:
-            self.stdscr.addstr(self.rows - 3 - i, 0, self.lines[index],
-                               curses.color_pair(2))
-            i = i + 1
-            index = index - 1
-        self.stdscr.refresh()
-
-    def paintStatus(self, text):
-        if len(text) > self.cols: raise TextTooLongError
-        self.stdscr.addstr(self.rows-2,0,text + ' ' * (self.cols-len(text)),
-                           curses.color_pair(1))
-        # move cursor to input line
-        self.stdscr.move(self.rows-1, self.cols-1)
-
-    def doRead(self):
-        """ Input is ready! """
-        curses.noecho()
-        self.timer = self.timer + 1
-        c = self.stdscr.getch() # read a character
-
-        if c == curses.KEY_BACKSPACE:
-            self.searchText = self.searchText[:-1]
-
-        elif c == curses.KEY_ENTER or c == 10:
-            self.addLine('[YOU] ' + self.searchText)
-            if self.searchText.startswith('co'):
-                connect_to_peer(self, self.searchText)
-            else:
-                send_message(self, self.searchText)
-            self.stdscr.refresh()
-            self.searchText = ''
-        else:
-            if len(self.searchText) == self.cols-2:
-                return
-            self.searchText = self.searchText + chr(c)
-
-        self.stdscr.addstr(self.rows-1, 0,
-                           self.searchText + (' ' * (
-                           self.cols-len(self.searchText)-2)))
-        self.stdscr.move(self.rows-1, len(self.searchText))
-        self.paintStatus(self.statusText + ' %d' % len(self.searchText))
-        self.stdscr.refresh()
-
-    def close(self):
-        """ clean up """
-
-        curses.nocbreak()
-        self.stdscr.keypad(0)
-        curses.echo()
-        curses.endwin()
-
-def connect_to_peer(screen, raw):
+def connect_to_peer(raw):
     args = raw.strip().split(' ')
     if len(args) == 2:
         def fingerprint_callback(result):
             details = json.loads(result['result']['message'])
-            screen.peer_host = details['ip_address']
-            screen.peer_port = details['port']
-            screen.addLine('Connecting to %s %d' % (screen.peer_host,
-                           screen.peer_port))
-            screen._node.send_message(screen.peer_host, screen.peer_port,
-                                      {'type': 'connect',})
+            host = details['ip_address']
+            port = details['port']
+            config.peer = host, port
+            console.display('Connecting to %s %d' % (host, port))
+            config.node.send_message(host, port, {'type': 'connect',})
 
-        peer_fingerprint = screen.config.contacts.get_fingerprint(args[1])
-        d = get_user_info(screen.config, peer_fingerprint)
+        peer_fingerprint = config.contacts.get_fingerprint(args[1])
+        d = get_user_info(peer_fingerprint)
         d.addCallback(fingerprint_callback)
     else:
-        screen.addLine('INCORRECT ARGS: co fingerprint')
+        console.display('INCORRECT ARGS: co fingerprint')
 
-def send_message(screen, raw):
+
+def send_message(raw):
     try:
-        if screen.peer_host and screen.peer_port:
-            screen._node.send_message(screen.peer_host, screen.peer_port,
-                                      {'type': 'message',
-                                       'message': raw})
+        if config.peer is not None:
+            host, port = config.peer
+            config.node.send_message(host, port,
+                {'type': 'message', 'message': raw})
         else:
-            screen.addLine('PLEASE CONNECT TO A PEER: "co "')
+            console.display('PLEASE CONNECT TO A PEER: "co "')
     except:
         pass
 
@@ -238,19 +133,15 @@ def parse_arguments():
 
 
 def main():
-    config = Config(**vars(parse_arguments()))
+    config.update(vars(parse_arguments()))
     config.key = crypto.get_my_key()
     config.contacts = contacts.Contacts("contacts.json")
-    result = post_user_info(config)
+    result = post_user_info()
     if result.status_code >= 400:
         sys.exit("Couldn't POST to friend server")
-    stdscr = curses.initscr() # initialize curses
-    screen = Screen(config, stdscr)   # create Screen object
-    stdscr.refresh()
-    n = Node('foo', 'bar', screen)
-    screen._node = n
-    reactor.listenTCP(config.port, MessageFactory(n))
-    reactor.addReader(screen) # add screen object as a reader to the reactor
-    screen.addLine('Fingerprint: %s' % config.key.fingerprint)
+    config.node = node = Node('foo', 'bar', config)
+    config.peer = None
+    reactor.listenTCP(config.port, MessageFactory(node))
+    reactor.callInThread(prompt)
+    console.display('Fingerprint: %s' % config.key.fingerprint)
     reactor.run() # have fun!
-    screen.close()
